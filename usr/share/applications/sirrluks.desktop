@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SirrLuks
+Comment=Change LUKS disk password
+Exec=pkexec /usr/bin/sirrluks
+Icon=sirrluks
+Terminal=true
+Type=Application
+Categories=System;Security;
+StartupNotify=true

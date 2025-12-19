@@ -1,0 +1,36 @@
+name: Build SirrLuks .deb for ARM64
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-arm64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential gcc-aarch64-linux-gnu dpkg-dev fakeroot
+
+      - name: Build .deb package
+        run: |
+          dpkg-deb --build . SirrLuks_${GITHUB_REF_NAME}_arm64.deb
+          ls -lh SirrLuks_${GITHUB_REF_NAME}_arm64.deb
+
+      - name: Upload .deb to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: SirrLuks_${{ github.ref_name }}_arm64.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

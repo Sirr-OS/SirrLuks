@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Colors
+b="\e[1m"
+w="\e[0m"
+r="\e[31m"
+d="\e[2m"
+
+# Banner
+logo="$b
+                          _cyqyc_
+                      :>3qKKKKKKKq3>:
+                  ';CpKKKKKKKkKKKKKKKpC;'
+              -\"iPKKKKKKkkkCZ3R0KKKKKKKKKKPi\"-
+          \`~v]KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK]v~\`
+       ,rwKKKKKKKKKKKKKPv;,:'-':,;vPKKKKKKKKKKKKKwr,
+      !KKKKKKKKKKKKKKK/             !KKKKKKKKKKKKKKK!
+      !KKKKKKKKKKKKKKf       ?       CKKKKKKKKKKKKKK!
+      !KKKKKKKKKKKKKp-               -qKKKKKKKKKKKKK!
+      !KKKKKKKKKKKKK>\"               \"\\KKKKKKKKKKKKK!
+      !KKKKKKKw;,_'-                   .-:,\"wKKKKKKK!
+      !KKKKKKKKhi*;\"                   \";*ihKKKKKKKK!
+      !KKKKKKKKKKKKK;                 ;KKKKKKKKKKKKK!
+      !KKKKKKKKKKKKK2>'             '>2KKKKKKKKKKKKK!
+      !KKKKKKKKKKKKKKKZ             ZKKKKKKKKKKKKKKK!
+      !KKKKKKKKKKKKKKK5             eKKKKKKKKKKKKKKK!
+      !KKKKKKKKKKKqC;-               -;CqKKKKKKKKKKK!
+      <KKKKKKKKkr,                       ,rSKKKKKKKK<
+       -\"v]qj;-                             -;jq]v\"-
+                        $w[SirrLuks]$w
+               $d LUKS password change tool
+                   $d by $w$r@Commander.Z3R0$w"
+
+echo -e "$logo"
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+DEVICE="/dev/mmcblk2p2"
+CRYPTSETUP="/sbin/cryptsetup"
+
+cleanup() {
+    unset CURRENT NEW1 NEW2
+}
+trap cleanup EXIT
+
+if [[ ! -b "$DEVICE" ]]; then
+    echo "Device not found: $DEVICE" >&2
+    exit 1
+fi
+
+if [[ ! -x "$CRYPTSETUP" ]]; then
+    echo "cryptsetup not found" >&2
+    exit 1
+fi
+
+echo "LUKS password change tool"
+echo
+
+read -rs -p "Current password: " CURRENT
+echo
+read -rs -p "New password: " NEW1
+echo
+read -rs -p "Confirm new password: " NEW2
+echo
+
+if [[ -z "$CURRENT" || -z "$NEW1" ]]; then
+    echo "Empty password is not allowed" >&2
+    exit 1
+fi
+
+if [[ "$NEW1" != "$NEW2" ]]; then
+    echo "Passwords do not match" >&2
+    exit 1
+fi
+
+echo
+echo "Adding new LUKS key..."
+
+if ! printf '%s\n%s\n' "$CURRENT" "$NEW1" | "$CRYPTSETUP" luksAddKey --batch-mode "$DEVICE"; then
+    echo "Failed to add new key" >&2
+    exit 1
+fi
+
+echo "Removing old LUKS key..."
+
+if ! printf '%s\n' "$CURRENT" | "$CRYPTSETUP" luksRemoveKey --batch-mode "$DEVICE"; then
+    echo "Warning: new key added, but old key was not removed" >&2
+    exit 1
+fi
+
+echo "LUKS password successfully changed"
+exit 0
