@@ -3,7 +3,7 @@ Version: 1.0.0
 Section: utils
 Priority: optional
 Architecture: arm64
-Depends: python3, python3-gi, cryptsetup, gir1.2-gtk-3.0, polkitd, pkexec
+Depends: python3, python3-gi, , polkitd, pkexec
 Maintainer: Commander-Z3R0 <commander.Z3R0@proton.me>
 Description: SirrOS LUKS password changer
- A simple graphical tool to change the disk encryption password on SirrOS.
+ A simple CLI tool to change the disk encryption password on SirrOS.
