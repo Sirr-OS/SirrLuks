@@ -12,7 +12,7 @@ case "$1" in
         # Icon
         chmod 0644 /usr/share/icons/hicolor/256x256/apps/sirrluks.png
         chmod 0644 /usr/share/icons/hicolor/500x500/apps/sirrluks.png
-        chmod 0644 /usr/share/icons/hicolor/scalable/apps/sirrluks.png
+        chmod 0644 /usr/share/icons/hicolor/scalable/apps/sirrluks.svg
 
         # Polkit policy
         chmod 0644 /usr/share/polkit-1/actions/org.sirros.luks-change.policy
