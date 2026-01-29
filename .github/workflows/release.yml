@@ -22,6 +22,15 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential gcc-aarch64-linux-gnu dpkg-dev fakeroot
 
+      - name: Fix permissions
+        run: |
+          chmod 0755 usr/bin/sirrluks
+          chmod 0755 DEBIAN/postinst
+
+      - name: Remove README from package tree
+        run: |
+          rm -f README.md
+
       - name: Build .deb package
         run: |
           dpkg-deb --build . SirrLuks_${GITHUB_REF_NAME}_arm64.deb
