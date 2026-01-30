@@ -24,7 +24,7 @@ jobs:
 
       - name: Fix permissions
         run: |
-          chmod 0755 usr/bin/sirr
+          chmod 0755 usr/bin/sirrluks
           chmod 0755 DEBIAN/postinst
 
       - name: Remove unnecessary files
