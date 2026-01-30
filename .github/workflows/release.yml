@@ -27,10 +27,11 @@ jobs:
           chmod 0755 usr/bin/sirrluks
           chmod 0755 DEBIAN/postinst
 
-      - name: Remove unnecessary files
+      - name: Remove README, .git and .github from package tree
         run: |
-          rm -rf .git
           rm -f README.md
+          rm -rf .git
+          rm -rf .github
 
       - name: Build .deb package
         run: |
