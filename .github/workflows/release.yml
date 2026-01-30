@@ -24,20 +24,12 @@ jobs:
 
       - name: Fix permissions
         run: |
-<<<<<<< HEAD
-          chmod 0755 usr/bin/sirrluks
-          chmod 0755 DEBIAN/postinst
-
-      - name: Remove README from package tree
-        run: |
-=======
           chmod 0755 usr/bin/sirr
           chmod 0755 DEBIAN/postinst
 
       - name: Remove unnecessary files
         run: |
           rm -rf .git
->>>>>>> 39be018 (Correction workflow)
           rm -f README.md
 
       - name: Build .deb package
