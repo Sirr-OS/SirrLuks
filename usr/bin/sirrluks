@@ -32,13 +32,10 @@ logo="$b
                    $d by $w$r@Commander.Z3R0$w"
 
 echo -e "$logo"
-
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-DEVICE="/dev/mmcblk2p2"
 CRYPTSETUP="/sbin/cryptsetup"
-
 cleanup() {
     unset CURRENT NEW1 NEW2
 }
@@ -49,18 +46,44 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [[ ! -b "$DEVICE" ]]; then
-    echo "Device not found: $DEVICE" >&2
-    exit 1
-fi
-
 if [[ ! -x "$CRYPTSETUP" ]]; then
     echo "cryptsetup not found" >&2
     exit 1
 fi
 
-echo "LUKS password change tool"
-echo
+list_luks_devices() {
+    local devices=()
+    for dev in /dev/[shv]d[a-z]* /dev/nvme[0-9]n[0-9]p* /dev/mmcblk*; do
+        if [[ -b "$dev" && "$($CRYPTSETUP isLuks "$dev" 2>/dev/null && echo "LUKS")" == "LUKS" ]]; then
+            luks_version=$($CRYPTSETUP luksDump "$dev" 2>/dev/null | grep "Version:" | awk '{print $2}')
+            if [[ "$luks_version" == "2" ]]; then
+                devices+=("$dev")
+            fi
+        fi
+    done
+    echo "${devices[@]}"
+}
+
+devices=($(list_luks_devices))
+if [[ ${#devices[@]} -eq 0 ]]; then
+    echo "No LUKS2 devices found" >&2
+    exit 1
+fi
+
+echo "Available LUKS2 devices:"
+for i in "${!devices[@]}"; do
+    echo "$((i+1)). ${devices[$i]}"
+done
+
+while true; do
+    read -p "Select device number: " choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 ]] && [[ "$choice" -le ${#devices[@]} ]]; then
+        DEVICE="${devices[$((choice-1))]}"
+        break
+    else
+        echo "Invalid selection"
+    fi
+done
 
 read -rs -p "Current password: " CURRENT
 echo
@@ -70,7 +93,7 @@ read -rs -p "Confirm new password: " NEW2
 echo
 
 if [[ -z "$CURRENT" || -z "$NEW1" ]]; then
-    echo "Empty password is not allowed" >&2
+    echo "Password cannot be empty" >&2
     exit 1
 fi
 
@@ -81,18 +104,21 @@ fi
 
 echo
 echo "Adding new LUKS key..."
-
 if ! printf '%s\n%s\n' "$CURRENT" "$NEW1" | "$CRYPTSETUP" luksAddKey --batch-mode "$DEVICE"; then
     echo "Failed to add new key" >&2
     exit 1
 fi
 
-echo "Removing old LUKS key..."
-
-if ! printf '%s\n' "$CURRENT" | "$CRYPTSETUP" luksRemoveKey --batch-mode "$DEVICE"; then
-    echo "Warning: new key added, but old key was not removed" >&2
-    exit 1
+read -p "Do you want to remove the old passphrase? (y/n): " remove_old
+if [[ "$remove_old" =~ ^[yY]$ ]]; then
+    echo "Removing old LUKS key..."
+    if ! printf '%s\n' "$CURRENT" | "$CRYPTSETUP" luksRemoveKey --batch-mode "$DEVICE"; then
+        echo "Warning: new key added, but old key could not be removed" >&2
+        exit 1
+    fi
+    echo "LUKS passphrase successfully changed"
+else
+    echo "New passphrase added, old passphrase remains valid"
 fi
 
-echo "LUKS password successfully changed"
 exit 0
