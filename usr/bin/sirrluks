@@ -34,8 +34,8 @@ logo="$b
 echo -e "$logo"
 set -Eeuo pipefail
 IFS=$'\n\t'
-
 CRYPTSETUP="/sbin/cryptsetup"
+
 cleanup() {
     unset CURRENT NEW1 NEW2
 }
@@ -52,19 +52,19 @@ if [[ ! -x "$CRYPTSETUP" ]]; then
 fi
 
 list_luks_devices() {
-    local devices=()
-    for dev in /dev/[shv]d[a-z]* /dev/nvme[0-9]n[0-9]p* /dev/mmcblk*; do
-        if [[ -b "$dev" && "$($CRYPTSETUP isLuks "$dev" 2>/dev/null && echo "LUKS")" == "LUKS" ]]; then
-            luks_version=$($CRYPTSETUP luksDump "$dev" 2>/dev/null | grep "Version:" | awk '{print $2}')
+    for dev in /dev/[shv]d[a-z]* /dev/nvme[0-9]n[0-9]p* /dev/mmcblk*p*; do
+        [[ -b "$dev" ]] || continue
+        if $CRYPTSETUP isLuks "$dev" 2>/dev/null; then
+            luks_version=$($CRYPTSETUP luksDump "$dev" 2>/dev/null | grep "^Version:" | awk '{print $2}')
             if [[ "$luks_version" == "2" ]]; then
-                devices+=("$dev")
+                echo "$dev"
             fi
         fi
     done
-    echo "${devices[@]}"
 }
 
-devices=($(list_luks_devices))
+mapfile -t devices < <(list_luks_devices)
+
 if [[ ${#devices[@]} -eq 0 ]]; then
     echo "No LUKS2 devices found" >&2
     exit 1
